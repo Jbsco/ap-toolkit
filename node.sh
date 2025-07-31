@@ -10,10 +10,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EKOS_CAPTURE_DIR="/home/pi/Pictures"
 NFS_EXPORT_DIR="/home/pi/observatory/captures"
 
+# Deployment image settings
+DEPLOY_DIR="${SCRIPT_DIR}/.deploy"
+BASE_IMAGE_URL="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2024-07-04/2024-07-04-raspios-bookworm-arm64-lite.img.xz"
+CUSTOM_IMAGE_NAME="observatory-node.img"
+
 show_usage() {
-    echo "Usage: $0 {test|deploy|setup-nfs|transfer|mount-nfs|test-camera} [user@host]"
+    echo "Usage: $0 {test|deploy|flash-image|setup-nfs|transfer|mount-nfs|test-camera} [arguments]"
     echo "  test        - Check deployment prerequisites"
     echo "  deploy      - Perform full node deployment"
+    echo "  flash-image - Create and flash Raspberry Pi OS image with custom setup"
     echo "  setup-nfs   - Configure NFS server on node and export captures"
     echo "  transfer    - Use rsync to transfer captures from node to local"
     echo "  mount-nfs   - Mount NFS share from node locally"
@@ -22,6 +28,7 @@ show_usage() {
     echo "Examples:"
     echo "  $0 test pi@192.168.1.100"
     echo "  $0 deploy pi@192.168.1.100"
+    echo "  $0 flash-image custom-config.json /dev/sdX"
     echo "  $0 setup-nfs pi@192.168.1.100"
     echo "  $0 transfer pi@192.168.1.100"
     echo "  $0 mount-nfs pi@192.168.1.100"
@@ -402,6 +409,159 @@ deploy_node() {
     echo "  Test camera: $0 test-camera $target"
 }
 
+create_custom_image() {
+    echo "Creating custom observatory node image..."
+    
+    # Create deploy directory if it doesn't exist
+    mkdir -p "$DEPLOY_DIR"
+    
+    local base_image="$DEPLOY_DIR/base-image.img.xz"
+    local custom_image="$DEPLOY_DIR/$CUSTOM_IMAGE_NAME"
+    
+    # Check if custom image already exists
+    if [ -f "$custom_image" ]; then
+        echo "Custom image already exists: $custom_image"
+        return 0
+    fi
+    
+    # Download base image if needed
+    if [ ! -f "$base_image" ]; then
+        echo "Downloading Raspberry Pi OS base image..."
+        echo "URL: $BASE_IMAGE_URL"
+        curl -L "$BASE_IMAGE_URL" -o "$base_image" --progress-bar
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to download base image"
+            return 1
+        fi
+    fi
+    
+    echo "Extracting base image..."
+    xz -dc "$base_image" > "$custom_image"
+    
+    if [ $? -eq 0 ]; then
+        echo "Custom image created: $custom_image"
+        echo "Image size: $(du -sh "$custom_image" | cut -f1)"
+        return 0
+    else
+        echo "ERROR: Failed to extract base image"
+        return 1
+    fi
+}
+
+create_image_config() {
+    local config_file="$1"
+    local hostname="${2:-observatory-node}"
+    local ssh_key="${3:-}"
+    
+    # Get SSH key if not provided
+    if [ -z "$ssh_key" ] && [ -f "$HOME/.ssh/id_rsa.pub" ]; then
+        ssh_key=$(cat "$HOME/.ssh/id_rsa.pub")
+    fi
+    
+    # Create default configuration
+    cat > "$config_file" << EOF
+{
+  "hostname": "$hostname",
+  "username": "pi",
+  "password": "observatory",
+  "ssh_enabled": true,
+  "ssh_authorized_keys": ["$ssh_key"],
+  "wifi_enabled": false,
+  "locale": "en_US.UTF-8",
+  "timezone": "UTC",
+  "keyboard_layout": "us"
+}
+EOF
+    
+    echo "Configuration created: $config_file"
+    echo "Edit this file to customize your deployment before flashing"
+}
+
+flash_image() {
+    local config_file="$1"
+    local device="$2"
+    
+    if [ -z "$config_file" ] || [ -z "$device" ]; then
+        echo "ERROR: Both config file and device required"
+        echo "Usage: $0 flash-image config.json /dev/sdX"
+        return 1
+    fi
+    
+    # Check if rpi-imager is available
+    if ! command -v rpi-imager > /dev/null 2>&1; then
+        echo "ERROR: rpi-imager not found"
+        echo "Install it first:"
+        echo "  On Ubuntu/Debian: sudo apt install rpi-imager"
+        echo "  On Arch/Manjaro: sudo pacman -S rpi-imager"
+        return 1
+    fi
+    
+    # Check if device exists and is a block device
+    if [ ! -b "$device" ]; then
+        echo "ERROR: $device is not a valid block device"
+        echo "Available devices:"
+        lsblk -d -o NAME,SIZE,MODEL | grep -E '^sd[a-z]'
+        return 1
+    fi
+    
+    # Create custom image if it doesn't exist
+    create_custom_image || return 1
+    
+    # Create default config if it doesn't exist
+    if [ ! -f "$config_file" ]; then
+        echo "Config file not found, creating default: $config_file"
+        create_image_config "$config_file"
+        echo ""
+        echo "Please edit $config_file and run the command again"
+        return 1
+    fi
+    
+    local custom_image="$DEPLOY_DIR/$CUSTOM_IMAGE_NAME"
+    
+    echo "========================================"
+    echo "FLASHING OBSERVATORY NODE IMAGE"
+    echo "========================================"
+    echo "Source image: $custom_image"
+    echo "Target device: $device"
+    echo "Configuration: $config_file"
+    echo ""
+    echo "WARNING: This will completely overwrite $device"
+    echo "All existing data will be lost!"
+    echo ""
+    read -p "Continue? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted"
+        return 1
+    fi
+    
+    echo "Flashing image..."
+    
+    # Use rpi-imager to flash with configuration
+    sudo rpi-imager --cli \
+        --os-image "$custom_image" \
+        --destination "$device" \
+        --config "$config_file" \
+        --enable-ssh \
+        --firstrun
+    
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "========================================"
+        echo "FLASHING COMPLETE"
+        echo "========================================"
+        echo "Remove SD card and insert into Raspberry Pi"
+        echo "After first boot, the node will be ready for deployment"
+        echo ""
+        echo "Connect via: ssh pi@<pi-ip-address>"
+        echo "Then run: $0 deploy pi@<pi-ip-address>"
+        return 0
+    else
+        echo "ERROR: Flashing failed"
+        return 1
+    fi
+}
+
 test_camera() {
     local target="$1"
     
@@ -557,6 +717,14 @@ case "${1:-}" in
             exit 1
         fi
         mount_nfs "$2"
+        ;;
+    "flash-image")
+        if [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
+            echo "ERROR: Both config file and device required for flash-image"
+            show_usage
+            exit 1
+        fi
+        flash_image "$2" "$3"
         ;;
     "test-camera")
         test_camera "${2:-}"
