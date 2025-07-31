@@ -4,15 +4,19 @@ Observatory automation scripts for coordinated astrophotography nodes.
 
 ## Scripts
 
-- `node.sh` - Node deployment, NFS setup, and file transfer management
+- `node.sh` - Node deployment, hardware setup, camera testing, NFS setup, and file transfer management
 - `process.sh` - Batch processing with Siril and astrometry.net
 
 ## Quick Start
 
 ```bash
-# Deploy to a fresh Raspberry Pi
+# Deploy to a fresh Raspberry Pi with astrophotography hardware
 ./node.sh test pi@192.168.1.100
 ./node.sh deploy pi@192.168.1.100
+
+# Test camera connectivity (local or remote)
+./node.sh test-camera                    # Test local camera
+./node.sh test-camera pi@192.168.1.100  # Test remote camera
 
 # Setup file sharing
 ./node.sh setup-nfs pi@192.168.1.100  # Enable NFS server
@@ -42,12 +46,24 @@ Use **KStars/Ekos Scheduler** for automated observation planning:
 - Remote observatory control over network connections
 - Extensive documentation and active community support
 
+## Hardware Setup
+
+The deployment script automatically configures:
+- **USB permissions** for cameras and telescope mounts
+- **INDI drivers** for Canon/Nikon cameras, FTDI serial devices, USB-to-serial adapters
+- **System services** for NTP time synchronization
+- **Directory structure** for capture storage and NFS sharing
+- **Hardware detection** via udev rules for plug-and-play device access
+
+Supported hardware includes Canon/Nikon DSLR cameras, FTDI-based telescope mounts, and USB-to-serial adapters commonly used with astronomical equipment.
+
 ## Complete Workflow Example
 
 ```bash
-# 1. Deploy fresh Raspberry Pi node
+# 1. Deploy fresh Raspberry Pi node with connected hardware
 ./node.sh test pi@192.168.1.100
 ./node.sh deploy pi@192.168.1.100
+./node.sh test-camera pi@192.168.1.100  # Verify camera detection
 ./node.sh setup-nfs pi@192.168.1.100
 
 # 2. Set up automated observing with KStars/Ekos:
@@ -64,5 +80,6 @@ Use **KStars/Ekos Scheduler** for automated observation planning:
 
 ## Dependencies
 
-Nodes require: KStars/EKOS, INDI drivers, SSH access
-Local processing requires: Siril, astrometry.net (optional)
+**Nodes require:** KStars/EKOS, INDI drivers, gphoto2, SSH access, hardware permissions
+
+**Local processing requires:** Siril, astrometry.net (optional)
