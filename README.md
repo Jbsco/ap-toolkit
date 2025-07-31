@@ -1,10 +1,19 @@
 # AP Toolkit
 
-Observatory automation scripts for coordinated astrophotography nodes.
+Deployment and processing scripts for Raspberry Pi nodes controlled by KStars/Ekos. Simplifies setup of Pi-based astrophotography nodes and automates data processing workflows.
+
+## What it does
+
+The AP Toolkit assists with:
+- **Deploying** KStars/Ekos and INDI software on Raspberry Pi nodes
+- **Configuring** hardware permissions and system settings for astrophotography equipment
+- **Testing** camera connectivity and basic hardware functionality
+- **Processing** captured image data with automated calibration and stacking
+- **Managing** file transfers and network storage between nodes
 
 ## Scripts
 
-- `node.sh` - Node deployment, hardware setup, camera testing, NFS setup, and file transfer management
+- `node.sh` - Raspberry Pi deployment, hardware setup, camera testing, NFS setup, and file transfer management
 - `process.sh` - Batch processing with Siril and astrometry.net
 
 ## Quick Start
@@ -62,16 +71,29 @@ Use **KStars/Ekos Scheduler** for automated observation planning:
 - Remote observatory control over network connections
 - Extensive documentation and active community support
 
-## Hardware Setup
+## Raspberry Pi Node Deployment
 
-The deployment script automatically configures:
-- **USB permissions** for cameras and telescope mounts
-- **INDI drivers** for Canon/Nikon cameras, FTDI serial devices, USB-to-serial adapters
-- **System services** for NTP time synchronization
-- **Directory structure** for capture storage and NFS sharing
-- **Hardware detection** via udev rules for plug-and-play device access
+The `node.sh` script prepares Raspberry Pi systems for KStars/Ekos control by configuring:
 
-Supported hardware includes Canon/Nikon DSLR cameras, FTDI-based telescope mounts, and USB-to-serial adapters commonly used with astronomical equipment.
+### System Configuration
+- **Software installation**: KStars/Ekos, INDI drivers, gphoto2, system utilities
+- **USB permissions**: Adds users to plugdev, tty, dialout groups for hardware access
+- **Udev rules**: Automatic device detection for cameras, mounts, and serial adapters
+- **System services**: NTP synchronization, SSH access, directory structure
+- **Network setup**: INDI server configuration for remote KStars/Ekos connections
+
+### Hardware Support
+Configures access for common astrophotography equipment:
+- **Cameras**: Canon/Nikon DSLR cameras via USB
+- **Mounts**: FTDI-based telescope mounts and USB-to-serial adapters
+- **Accessories**: Focusers, filter wheels, guide cameras
+
+### KStars/Ekos Integration
+Each deployed Pi node:
+- Runs INDI server (port 7624) for equipment drivers
+- Accepts remote connections from KStars/Ekos control systems
+- Provides local storage with optional NFS sharing for captured images
+- Operates as part of a multi-node observatory network controlled by KStars/Ekos
 
 ## Dependencies
 
