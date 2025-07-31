@@ -4,7 +4,7 @@ Observatory automation scripts for coordinated astrophotography nodes.
 
 ## Scripts
 
-- `deploy.sh` - SSH setup and deployment to Raspberry Pi nodes
+- `node.sh` - Node deployment, NFS setup, and file transfer management
 - `process.sh` - Batch processing with Siril and astrometry.net
 - `control.sh` - Manual KStars/Ekos control via SSH
 
@@ -12,8 +12,13 @@ Observatory automation scripts for coordinated astrophotography nodes.
 
 ```bash
 # Deploy to a fresh Raspberry Pi
-./deploy.sh test pi@192.168.1.100
-./deploy.sh deploy pi@192.168.1.100
+./node.sh test pi@192.168.1.100
+./node.sh deploy pi@192.168.1.100
+
+# Setup file sharing
+./node.sh setup-nfs pi@192.168.1.100  # Enable NFS server
+./node.sh mount-nfs pi@192.168.1.100   # Mount NFS locally
+./node.sh transfer pi@192.168.1.100    # SSH transfer to ./captures/
 
 # Process captured data
 ./process.sh batch /mnt/nas/observatory/2025-07
@@ -45,8 +50,9 @@ Use **KStars/Ekos Scheduler** for automated observation planning:
 
 ```bash
 # 1. Deploy fresh Raspberry Pi node
-./deploy.sh test pi@192.168.1.100
-./deploy.sh deploy pi@192.168.1.100
+./node.sh test pi@192.168.1.100
+./node.sh deploy pi@192.168.1.100
+./node.sh setup-nfs pi@192.168.1.100
 
 # 2. Set up automated observing with KStars/Ekos:
 #    - Launch KStars locally
