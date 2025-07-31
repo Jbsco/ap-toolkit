@@ -6,7 +6,6 @@ Observatory automation scripts for coordinated astrophotography nodes.
 
 - `node.sh` - Node deployment, NFS setup, and file transfer management
 - `process.sh` - Batch processing with Siril and astrometry.net
-- `control.sh` - Manual KStars/Ekos control via SSH
 
 ## Quick Start
 
@@ -22,9 +21,6 @@ Observatory automation scripts for coordinated astrophotography nodes.
 
 # Process captured data
 ./process.sh batch /mnt/nas/observatory/2025-07
-
-# Manual control of node
-./control.sh connect pi@192.168.1.100
 ```
 
 ### Observation Scheduling
@@ -64,9 +60,6 @@ Use **KStars/Ekos Scheduler** for automated observation planning:
 # 3. Monitor and process data
 ./process.sh batch /mnt/nas/observatory/
 ./process.sh solve /mnt/nas/observatory/processed/
-
-# 4. Manual intervention if needed
-./control.sh connect pi@192.168.1.100
 ```
 
 ## Dependencies
