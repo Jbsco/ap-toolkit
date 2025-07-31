@@ -10,6 +10,9 @@ Observatory automation scripts for coordinated astrophotography nodes.
 ## Quick Start
 
 ```bash
+# Create custom SD card image and flash
+./node.sh flash-image config.json /dev/sdX
+
 # Deploy to a fresh Raspberry Pi with astrophotography hardware
 ./node.sh test pi@192.168.1.100
 ./node.sh deploy pi@192.168.1.100
@@ -60,20 +63,23 @@ Supported hardware includes Canon/Nikon DSLR cameras, FTDI-based telescope mount
 ## Complete Workflow Example
 
 ```bash
-# 1. Deploy fresh Raspberry Pi node with connected hardware
+# Create and flash custom SD card
+./node.sh flash-image config.json /dev/sdX
+
+# Deploy fresh Raspberry Pi node with connected hardware
 ./node.sh test pi@192.168.1.100
 ./node.sh deploy pi@192.168.1.100
 ./node.sh test-camera pi@192.168.1.100  # Verify camera detection
 ./node.sh setup-nfs pi@192.168.1.100
 
-# 2. Set up automated observing with KStars/Ekos:
+# Set up automated observing with KStars/Ekos:
 #    - Launch KStars locally
 #    - Open Ekos (Tools → Ekos)
 #    - Connect to INDI server on pi@192.168.1.100:7624
 #    - Create capture sequences and schedules in Scheduler tab
 #    - Start automated observing
 
-# 3. Monitor and process data
+# Monitor and process data
 ./process.sh batch /mnt/nas/observatory/
 ./process.sh solve /mnt/nas/observatory/processed/
 ```
