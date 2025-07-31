@@ -1,4 +1,5 @@
 # AP Toolkit
+<img width="1023" height="184" alt="image" src="https://github.com/user-attachments/assets/30686937-5d7e-4f97-99aa-d04c38dbb27a" />
 
 Deployment and processing scripts for Raspberry Pi nodes controlled by KStars/Ekos. Simplifies setup of Pi-based astrophotography nodes and automates data processing workflows.
 
