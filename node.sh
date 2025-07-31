@@ -11,12 +11,13 @@ EKOS_CAPTURE_DIR="/home/pi/Pictures"
 NFS_EXPORT_DIR="/home/pi/observatory/captures"
 
 show_usage() {
-    echo "Usage: $0 {test|deploy|setup-nfs|transfer|mount-nfs} [user@host]"
-    echo "  test      - Check deployment prerequisites"
-    echo "  deploy    - Perform full node deployment"
-    echo "  setup-nfs - Configure NFS server on node and export captures"
-    echo "  transfer  - Use rsync to transfer captures from node to local"
-    echo "  mount-nfs - Mount NFS share from node locally"
+    echo "Usage: $0 {test|deploy|setup-nfs|transfer|mount-nfs|test-camera} [user@host]"
+    echo "  test        - Check deployment prerequisites"
+    echo "  deploy      - Perform full node deployment"
+    echo "  setup-nfs   - Configure NFS server on node and export captures"
+    echo "  transfer    - Use rsync to transfer captures from node to local"
+    echo "  mount-nfs   - Mount NFS share from node locally"
+    echo "  test-camera - Test camera detection and basic functionality"
     echo ""
     echo "Examples:"
     echo "  $0 test pi@192.168.1.100"
@@ -24,6 +25,8 @@ show_usage() {
     echo "  $0 setup-nfs pi@192.168.1.100"
     echo "  $0 transfer pi@192.168.1.100"
     echo "  $0 mount-nfs pi@192.168.1.100"
+    echo "  $0 test-camera  # Test local camera"
+    echo "  $0 test-camera pi@192.168.1.100  # Test remote camera"
 }
 
 check_ssh() {
@@ -344,6 +347,120 @@ deploy_node() {
     echo "  Mount NFS: $0 mount-nfs $target"
 }
 
+test_camera() {
+    local target="$1"
+    
+    if [ -z "$target" ]; then
+        echo "========================================"
+        echo "TESTING LOCAL CAMERA"
+        echo "========================================"
+        
+        # Check if gphoto2 is installed
+        if ! command -v gphoto2 >/dev/null 2>&1; then
+            echo "ERROR: gphoto2 not found. Please install gphoto2 first."
+            echo "  On Ubuntu/Debian: sudo apt install gphoto2"
+            echo "  On Arch/Manjaro: sudo pacman -S gphoto2"
+            return 1
+        fi
+        
+        echo "[OK] gphoto2 is installed"
+        echo ""
+        
+        echo "Detecting cameras..."
+        local cameras=$(gphoto2 --auto-detect 2>/dev/null | tail -n +3)
+        
+        if [ -z "$cameras" ] || echo "$cameras" | grep -q "^$"; then
+            echo "[FAIL] No cameras detected"
+            echo ""
+            echo "Troubleshooting:"
+            echo "  1. Ensure camera is connected via USB"
+            echo "  2. Camera should be in PTP/MTP mode (not Mass Storage)"
+            echo "  3. For Canon cameras, try setting to Bulb or Manual mode"
+            echo "  4. Check USB cable and try different ports"
+            return 1
+        else
+            echo "[OK] Camera(s) detected:"
+            echo "$cameras"
+            echo ""
+            
+            # Try to get camera summary for first detected camera
+            echo "Getting camera information..."
+            if gphoto2 --summary 2>/dev/null | head -20; then
+                echo ""
+                echo "[OK] Camera communication successful"
+                
+                # Test basic camera operations
+                echo ""
+                echo "Testing camera capabilities..."
+                
+                # Check if we can get config
+                if gphoto2 --list-config >/dev/null 2>&1; then
+                    echo "[OK] Camera configuration accessible"
+                    
+                    # Try to get some basic settings
+                    echo "Key camera settings:"
+                    gphoto2 --get-config /main/imgsettings/iso 2>/dev/null | grep "Current" || echo "  ISO: Cannot read"
+                    gphoto2 --get-config /main/capturesettings/shutterspeed 2>/dev/null | grep "Current" || echo "  Shutter: Cannot read"
+                    gphoto2 --get-config /main/imgsettings/aperture 2>/dev/null | grep "Current" || echo "  Aperture: Cannot read"
+                else
+                    echo "[WARN] Camera configuration not fully accessible"
+                fi
+                
+                echo ""
+                echo "========================================"
+                echo "LOCAL CAMERA TEST COMPLETE"
+                echo "========================================"
+                return 0
+            else
+                echo "[FAIL] Camera detected but communication failed"
+                echo "Camera may be busy or in wrong mode"
+                return 1
+            fi
+        fi
+    else
+        echo "========================================"
+        echo "TESTING REMOTE CAMERA ON $target"
+        echo "========================================"
+        
+        check_ssh "$target" || return 1
+        
+        # Check if gphoto2 is installed on remote
+        if ! ssh "$target" "command -v gphoto2 >/dev/null 2>&1"; then
+            echo "ERROR: gphoto2 not found on $target"
+            echo "Install it first: ssh $target 'sudo apt install gphoto2'"
+            return 1
+        fi
+        
+        echo "[OK] gphoto2 is installed on remote"
+        echo ""
+        
+        echo "Detecting cameras on remote..."
+        local remote_cameras=$(ssh "$target" "gphoto2 --auto-detect 2>/dev/null | tail -n +3")
+        
+        if [ -z "$remote_cameras" ] || echo "$remote_cameras" | grep -q "^$"; then
+            echo "[FAIL] No cameras detected on $target"
+            return 1
+        else
+            echo "[OK] Camera(s) detected on $target:"
+            echo "$remote_cameras"
+            echo ""
+            
+            echo "Getting remote camera information..."
+            if ssh "$target" "gphoto2 --summary 2>/dev/null | head -20"; then
+                echo ""
+                echo "[OK] Remote camera communication successful"
+                echo "========================================"
+                echo "REMOTE CAMERA TEST COMPLETE"
+                echo "========================================"
+                return 0
+            else
+                echo "[FAIL] Remote camera detected but communication failed"
+                return 1
+            fi
+        fi
+    fi
+}
+
 # Main execution
 case "${1:-}" in
     "test")
@@ -385,6 +502,9 @@ case "${1:-}" in
             exit 1
         fi
         mount_nfs "$2"
+        ;;
+    "test-camera")
+        test_camera "${2:-}"
         ;;
     *)
         show_usage
