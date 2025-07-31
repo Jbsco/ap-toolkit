@@ -1,5 +1,6 @@
 # Deployment images and temporary files
 .deploy/
+.captures/
 
 # OS generated files
 .DS_Store

@@ -27,8 +27,21 @@ Observatory automation scripts for coordinated astrophotography nodes.
 ./node.sh transfer pi@192.168.1.100    # SSH transfer to ./captures/
 
 # Process captured data
-./process.sh batch /mnt/nas/observatory/2025-07
+./process.sh batch ./captures
 ```
+
+### Processing Script Workflow
+
+The `process.sh` script automates the processing of astrophotography data using Siril.
+
+**Steps:**
+1. **Stack darks, flats**: Stacks dark and flat frames for calibration.
+2. **Calibrate lights**: Applies dark and flat calibration to light frames.
+3. **Apply background extraction**: Removes background gradients from light frames.
+4. **Register stars**: Aligns frames using stars; uses the middle frame as a reference.
+5. **Exclude frames outside thresholds**: Filters frames based on focus (FWHM < mean+2σ), star count (> mean-2σ), and roundness (> mean-1.5σ).
+6. **Stack selected frames**: Combines frames using winsorized sigma filter with FWHM weighting.
+7. **Output**: Processed images saved in `process_*` directory as `result.fit`.
 
 ### Observation Scheduling
 
@@ -59,30 +72,6 @@ The deployment script automatically configures:
 - **Hardware detection** via udev rules for plug-and-play device access
 
 Supported hardware includes Canon/Nikon DSLR cameras, FTDI-based telescope mounts, and USB-to-serial adapters commonly used with astronomical equipment.
-
-## Complete Workflow Example
-
-```bash
-# Create and flash custom SD card
-./node.sh flash-image config.json /dev/sdX
-
-# Deploy fresh Raspberry Pi node with connected hardware
-./node.sh test pi@192.168.1.100
-./node.sh deploy pi@192.168.1.100
-./node.sh test-camera pi@192.168.1.100  # Verify camera detection
-./node.sh setup-nfs pi@192.168.1.100
-
-# Set up automated observing with KStars/Ekos:
-#    - Launch KStars locally
-#    - Open Ekos (Tools → Ekos)
-#    - Connect to INDI server on pi@192.168.1.100:7624
-#    - Create capture sequences and schedules in Scheduler tab
-#    - Start automated observing
-
-# Monitor and process data
-./process.sh batch /mnt/nas/observatory/
-./process.sh solve /mnt/nas/observatory/processed/
-```
 
 ## Dependencies
 
