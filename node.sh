@@ -88,6 +88,10 @@ install_base_packages() {
     case "$pkg_mgr" in
         "apt")
             ssh "$target" "sudo apt update"
+            # Install astronomy software repository if needed
+            ssh "$target" "sudo add-apt-repository -y ppa:mutlaqja/ppa 2>/dev/null || true"
+            ssh "$target" "sudo apt update"
+            
             ssh "$target" "sudo apt install -y \
                 kstars-bleeding \
                 indi-full \
@@ -103,7 +107,13 @@ install_base_packages() {
                 nfs-kernel-server \
                 nfs-common \
                 htop \
-                screen"
+                screen \
+                udev \
+                libusb-1.0-0-dev \
+                libftdi1-dev \
+                chrony \
+                curl \
+                wget"
             ;;
         "pacman")
             ssh "$target" "sudo pacman -Syu --noconfirm"
@@ -120,13 +130,56 @@ install_base_packages() {
                 rsync \
                 nfs-utils \
                 htop \
-                screen"
+                screen \
+                udev \
+                libusb \
+                libftdi \
+                gpsd \
+                chrony \
+                curl \
+                wget"
             ;;
         *)
             echo "ERROR: Unsupported package manager: $pkg_mgr"
             return 1
             ;;
     esac
+}
+
+setup_hardware_permissions() {
+    local target="$1"
+    echo "Setting up hardware permissions..."
+    
+    # Add user to necessary groups for hardware access
+    ssh "$target" "sudo usermod -aG plugdev,tty,dialout,video \$(whoami)"
+    
+    # Create udev rules for astrophotography hardware
+    ssh "$target" "sudo tee /etc/udev/rules.d/99-astrophotography.rules << 'EOF'
+# USB cameras and mounts for astrophotography
+# Canon cameras
+SUBSYSTEM=="usb", ATTR{idVendor}=="04a9", MODE="0666", GROUP="plugdev"
+# Nikon cameras  
+SUBSYSTEM=="usb", ATTR{idVendor}=="04b0", MODE="0666", GROUP="plugdev"
+# Generic USB cameras
+SUBSYSTEM=="usb", ATTR{bDeviceClass}=="06", MODE="0666", GROUP="plugdev"
+# FTDI devices (common for telescope mounts)
+SUBSYSTEM=="usb", ATTR{idVendor}=="0403", MODE="0666", GROUP="plugdev"
+# Prolific USB-to-serial adapters
+SUBSYSTEM=="usb", ATTR{idVendor}=="067b", MODE="0666", GROUP="plugdev"
+# CP210x USB-to-serial adapters
+SUBSYSTEM=="usb", ATTR{idVendor}=="10c4", MODE="0666", GROUP="plugdev"
+# CH341 USB-to-serial adapters
+SUBSYSTEM=="usb", ATTR{idVendor}=="1a86", MODE="0666", GROUP="plugdev"
+# Generic serial devices
+KERNEL=="ttyUSB[0-9]*", MODE="0666", GROUP="plugdev"
+KERNEL=="ttyACM[0-9]*", MODE="0666", GROUP="plugdev"
+EOF"
+    
+    # Reload udev rules
+    ssh "$target" "sudo udevadm control --reload-rules && sudo udevadm trigger"
+    
+    echo "Hardware permissions configured. User added to groups: plugdev, tty, dialout, video"
+    echo "Note: You may need to log out and back in for group changes to take effect"
 }
 
 configure_indi() {
@@ -332,6 +385,7 @@ deploy_node() {
     
     check_ssh "$target" || return 1
     install_base_packages "$target"
+    setup_hardware_permissions "$target"
     configure_indi "$target"
     setup_capture_directories "$target"
     setup_automation "$target"
@@ -345,6 +399,7 @@ deploy_node() {
     echo "  Setup NFS: $0 setup-nfs $target"
     echo "  Transfer files: $0 transfer $target"
     echo "  Mount NFS: $0 mount-nfs $target"
+    echo "  Test camera: $0 test-camera $target"
 }
 
 test_camera() {
