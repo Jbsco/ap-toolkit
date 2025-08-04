@@ -53,6 +53,28 @@ The `process.sh` script automates the processing of astrophotography data using 
 6. **Stack selected frames**: Combines frames using winsorized sigma filter with FWHM weighting.
 7. **Output**: Processed images saved in `process_*` directory as `result.fit`.
 
+
+If [Astrometry.net](https://github.com/dstndstn/astrometry.net) is installed locally, and the [appropriate catalogues](https://data.astrometry.net/) are present, then the image may be plate-solved and annotated:
+
+```
+solve-field process_captures/result.fit -D output_directory
+plot-constellations -w output_directory/result.wcs -C -B -D -d /usr/share/astrometry/data/hd.fits -o result_annotated.png
+```
+
+![vega_annotated](https://github.com/user-attachments/assets/ad95bc30-6890-4387-aa52-e76f42f8c2a6)
+
+The python scriopt `fits_to_mp4.py` may also be used to produce a video sequence of the collected data. This is similar to Siril's ability to output a sequence to video (generally the Siril function is recommended), but the script allows specifying prefixes to filter from existing *.fit files in a directory, as well as the intermediate file format used by OpenCV:
+
+```
+fits_to_mp4.py . --prefix bkg_pp_ --bmp
+```
+
+https://github.com/user-attachments/assets/963f8cfa-f93b-4940-aa53-6ca9eeeef182
+
+This script may also be used to produce video of other timelapse subjects.
+
+https://github.com/user-attachments/assets/b77f7ed9-9470-4317-9149-bb0a43b25c80
+
 ### Observation Scheduling
 
 Use **KStars/Ekos Scheduler** for automated observation planning:
@@ -100,4 +122,4 @@ Each deployed Pi node:
 
 **Nodes require:** KStars/EKOS, INDI drivers, gphoto2, SSH access, hardware permissions
 
-**Local processing requires:** Siril, astrometry.net (optional)
+**Local processing requires:** Siril, Astrometry.net (optional)
