@@ -16,6 +16,7 @@ The AP Toolkit assists with:
 
 - `node.sh` - Raspberry Pi deployment, hardware setup, camera testing, NFS setup, and file transfer management
 - `process.sh` - Batch processing with Siril and astrometry.net
+- `ref_binder_gen.py` - Astrophotography sequence planning and telescope setup analysis
 
 ## Quick Start
 
@@ -35,6 +36,9 @@ The AP Toolkit assists with:
 ./node.sh setup-nfs pi@192.168.1.100  # Enable NFS server
 ./node.sh mount-nfs pi@192.168.1.100   # Mount NFS locally
 ./node.sh transfer pi@192.168.1.100    # SSH transfer to ./captures/
+
+# Plan astrophotography sequences
+python3 ref_binder_gen.py --sequence --target-name "Orion Nebula" --target-magnitude 4.0 --target-type nebula --total-time 300
 
 # Process captured data
 ./process.sh batch ./captures
