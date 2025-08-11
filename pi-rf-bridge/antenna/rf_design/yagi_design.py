@@ -76,13 +76,23 @@ def plot_yagi_geometry(design: YagiDesign, save_path: str = None):
     # Calculate physical dimensions in millimeters for readability
     wavelength_mm = wavelength_m(design.frequency_hz) * 1000
     
+    # Element colors using XKCD survey colors
+    element_colors = {
+        'driven': 'xkcd:orangered',
+        'reflector': 'xkcd:magenta', 
+        'director': 'xkcd:aquamarine'
+    }
+    
     for element in design.elements:
         pos_mm = element.position_lambda * wavelength_mm
         length_mm = element.length_lambda * wavelength_mm
         
+        # Get color for this element type
+        color = element_colors.get(element.element_type, 'blue')
+        
         # Draw element as horizontal line
         ax.plot([pos_mm, pos_mm], [-length_mm/2, length_mm/2], 
-                'b-', linewidth=3, label=element.element_type if element.element_type not in ax.get_legend_handles_labels()[1] else "")
+                color=color, linewidth=3, label=element.element_type if element.element_type not in ax.get_legend_handles_labels()[1] else "")
         
         # Mark center point
         ax.plot(pos_mm, 0, 'ro', markersize=4)
