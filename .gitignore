@@ -18,6 +18,11 @@ Thumbs.db
 *.swo
 *~
 
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
 # Temporary files
 *.tmp
 *.log
