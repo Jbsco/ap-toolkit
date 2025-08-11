@@ -65,6 +65,12 @@ solve-field process_captures/result.fit -D output_directory
 plot-constellations -w output_directory/result.wcs -C -B -D -d /usr/share/astrometry/data/hd.fits -o result_annotated.png
 ```
 
+Alternatively, use the `plate-solve-annotate.sh` script for automated plate solving and annotation:
+
+```
+./plate-solve-annotate.sh process_captures/result.fit --hd
+```
+
 ![vega_annotated](https://github.com/user-attachments/assets/ad95bc30-6890-4387-aa52-e76f42f8c2a6)
 
 The python scriopt `fits_to_mp4.py` may also be used to produce a video sequence of the collected data. This is similar to Siril's ability to output a sequence to video (generally the Siril function is recommended), but the script allows specifying prefixes to filter from existing *.fit files in a directory, as well as the intermediate file format used by OpenCV:
