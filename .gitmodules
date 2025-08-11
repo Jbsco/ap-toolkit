@@ -1,0 +1,3 @@
+[submodule "pi-rf-tracker"]
+	path = pi-rf-tracker
+	url = git@github.com:Jbsco/pi-rf-tracker.git
