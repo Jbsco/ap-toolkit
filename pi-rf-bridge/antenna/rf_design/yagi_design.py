@@ -51,7 +51,10 @@ def design_yagi_5element(frequency_hz: float) -> YagiDesign:
         YagiElement(0.48, 0.410, 'director'),       # Third director
     ]
     
-    boom_length = 0.48  # Total boom length in wavelengths
+    # Calculate actual boom length needed (span between elements)
+    positions = [e.position_lambda for e in elements]
+    boom_length = max(positions) - min(positions)  # Corrected calculation
+    
     impedance = 50.0    # Design impedance
     gain = 9.2          # Estimated gain in dBi
     
@@ -89,9 +92,11 @@ def plot_yagi_geometry(design: YagiDesign, save_path: str = None):
                    (pos_mm, length_mm/2 + 20), 
                    ha='center', va='bottom', fontsize=8)
     
-    # Draw boom
-    boom_length_mm = design.boom_length_lambda * wavelength_mm
-    ax.plot([-boom_length_mm/4, boom_length_mm*3/4], [0, 0], 
+    # Draw boom - connect from first to last element
+    element_positions = [element.position_lambda * wavelength_mm for element in design.elements]
+    boom_start = min(element_positions)
+    boom_end = max(element_positions)
+    ax.plot([boom_start, boom_end], [0, 0], 
             'k-', linewidth=2, alpha=0.7, label='Boom')
     
     # Mark feed point
