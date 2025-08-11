@@ -87,8 +87,45 @@ Antenna modeling and impedance matching networks.
    - Software-controlled band switching
    - RSSI feedback for tracking optimization
 
+## Corrected Design Specifications
+
+**CRITICAL UPDATE**: Original boom length calculation was incorrect.
+
+**Corrected Dimensions:**
+- 2.4 GHz boom length: **89.3mm** (not 58.7mm)
+- 5.8 GHz boom length: **37.7mm** (not 24.8mm)
+- Total antenna envelope: ~109 × 69 × 6mm
+
+## Final Build Options
+
+### Option 1: Dual-Sided PCB (Recommended)
+- **Dimensions**: 109 × 69 × 1.6mm
+- **Weight**: ~15g with components
+- **Cost**: ~$50-60 per antenna
+- **Construction**: 4-layer PCB with ground plane isolation
+- **Top layer**: 2.4 GHz Yagi elements
+- **Bottom layer**: 5.8 GHz Yagi elements (cross-polarized)
+- **Isolation**: >30 dB between bands via ground plane
+- **Performance impact**: <0.5 dB degradation
+- **Band switching**: Single GPIO pin control via PIN diodes
+
+### Option 2: 3D Printed Boom + Stainless Spokes
+- **Dimensions**: 99 × 59 × 6mm (square boom)
+- **Weight**: ~9g total
+- **Cost**: ~$15-25 per antenna
+- **Construction**: Press-fit 2.0mm stainless spokes into 3D printed holes
+- **No drill press needed**: Printer naturally under-sizes holes for perfect fit
+- **Tolerance**: ±0.5mm positioning adequate with element trimming
+- **Materials**: PLA/PETG boom, bicycle spokes, separate matching PCB
+
+### Pi Integration Requirements
+**Hardware**: Single GPIO pin (3.3V, 10mA) controls band switching
+**Software**: Simple `GPIO.output()` call in antenna tracker
+**Switching logic**: RSSI-based with hysteresis (5.8 GHz primary, 2.4 GHz fallback)
+**No additional hardware required** - Pi GPIO sufficient
+
 **Next Steps:**
-- Mechanical CAD design and 3D printing
-- PCB layout for matching networks
+- KiCad dual-sided PCB layout design
+- 3D printed boom CAD modeling
 - Prototype fabrication and NanoVNA testing
 - Integration with BLDC tracking system
