@@ -17,6 +17,7 @@ The AP Toolkit assists with:
 - `node.sh` - Raspberry Pi deployment, hardware setup, camera testing, NFS setup, and file transfer management
 - `process.sh` - Batch processing with Siril and astrometry.net
 - `ref_binder_gen.py` - Astrophotography sequence planning and telescope setup analysis
+- `estexp.py` - Exposure recommendation from one or two light frames, pedestal from a sibling master dark
 
 ## Quick Start
 
